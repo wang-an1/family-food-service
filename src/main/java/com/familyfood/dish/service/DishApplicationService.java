@@ -1,82 +1,30 @@
 package com.familyfood.dish.service;
 
-import com.familyfood.common.context.ActorContext;
-import com.familyfood.common.context.ActorContextProvider;
 import com.familyfood.dish.dto.DishRequest;
 import com.familyfood.dish.dto.DishResponse;
 import com.familyfood.dish.dto.TagRequest;
 import com.familyfood.dish.entity.DishCategory;
 import com.familyfood.dish.entity.DishTag;
 import java.util.List;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-@Service
-@Transactional(readOnly = true)
-public class DishApplicationService {
-    private final ActorContextProvider actorProvider;
-    private final DishCatalogService catalogService;
+public interface DishApplicationService {
+    List<DishResponse> list(String keyword, Long categoryId, Long tagId, String status);
 
-    public DishApplicationService(ActorContextProvider actorProvider, DishCatalogService catalogService) {
-        this.actorProvider = actorProvider;
-        this.catalogService = catalogService;
-    }
+    DishResponse get(Long id);
 
-    public List<DishResponse> list(String keyword, Long categoryId, Long tagId, String status) {
-        return catalogService.list(actorProvider.current(), keyword, categoryId, tagId, status);
-    }
+    DishResponse create(DishRequest request);
 
-    public DishResponse get(Long id) {
-        return catalogService.get(actorProvider.current(), id);
-    }
+    DishResponse update(Long id, DishRequest request);
 
-    @Transactional
-    public DishResponse create(DishRequest request) {
-        ActorContext actor = actorProvider.current();
-        actor.requireAdmin();
-        return catalogService.create(actor, request);
-    }
+    DishResponse updateStatus(Long id, String status);
 
-    @Transactional
-    public DishResponse update(Long id, DishRequest request) {
-        ActorContext actor = actorProvider.current();
-        actor.requireAdmin();
-        return catalogService.update(actor, id, request);
-    }
+    void delete(Long id);
 
-    @Transactional
-    public DishResponse updateStatus(Long id, String status) {
-        ActorContext actor = actorProvider.current();
-        actor.requireAdmin();
-        return catalogService.updateStatus(actor, id, status);
-    }
+    List<DishCategory> categories();
 
-    @Transactional
-    public void delete(Long id) {
-        ActorContext actor = actorProvider.current();
-        actor.requireAdmin();
-        catalogService.delete(actor, id);
-    }
+    DishCategory createCategory(String name);
 
-    public List<DishCategory> categories() {
-        return catalogService.categories(actorProvider.current());
-    }
+    List<DishTag> tags();
 
-    @Transactional
-    public DishCategory createCategory(String name) {
-        ActorContext actor = actorProvider.current();
-        actor.requireAdmin();
-        return catalogService.createCategory(actor, name);
-    }
-
-    public List<DishTag> tags() {
-        return catalogService.tags(actorProvider.current());
-    }
-
-    @Transactional
-    public DishTag createTag(TagRequest request) {
-        ActorContext actor = actorProvider.current();
-        actor.requireAdmin();
-        return catalogService.createTag(actor, request);
-    }
+    DishTag createTag(TagRequest request);
 }

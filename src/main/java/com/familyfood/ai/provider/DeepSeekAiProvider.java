@@ -1,7 +1,6 @@
 package com.familyfood.ai.provider;
 
 import com.familyfood.ai.dto.RecommendationDto;
-import com.familyfood.auth.entity.User;
 import com.familyfood.common.AppException;
 import com.familyfood.config.AppProperties;
 import com.familyfood.system.api.SystemConfigApi;
@@ -15,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -32,6 +32,7 @@ public class DeepSeekAiProvider implements AiProvider {
     private final ObjectMapper objectMapper;
     private final RestClient restClient;
 
+    @Autowired
     public DeepSeekAiProvider(AppProperties properties, SystemConfigApi configService, ObjectMapper objectMapper) {
         this.properties = properties;
         this.configService = configService;

@@ -5,12 +5,14 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ScheduledTaskHandlerRegistry {
     private final Map<String, ScheduledTaskHandler> handlers;
 
+    @Autowired
     public ScheduledTaskHandlerRegistry(List<ScheduledTaskHandler> discoveredHandlers) {
         Map<String, ScheduledTaskHandler> mapped = new LinkedHashMap<>();
         for (ScheduledTaskHandler handler : discoveredHandlers) {

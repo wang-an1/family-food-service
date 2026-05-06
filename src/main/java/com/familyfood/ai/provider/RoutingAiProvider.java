@@ -3,6 +3,7 @@ package com.familyfood.ai.provider;
 import com.familyfood.common.AppException;
 import com.familyfood.config.AppProperties;
 import com.familyfood.system.api.SystemConfigApi;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +15,7 @@ public class RoutingAiProvider implements AiProvider {
     private final DeepSeekAiProvider deepSeekProvider;
     private final MockAiProvider mockProvider;
 
+    @Autowired
     public RoutingAiProvider(AppProperties properties, SystemConfigApi configService,
                              DeepSeekAiProvider deepSeekProvider, MockAiProvider mockProvider) {
         this.properties = properties;

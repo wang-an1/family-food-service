@@ -6,7 +6,6 @@ import com.familyfood.dish.dto.DishResponse;
 import com.familyfood.dish.dto.NameRequest;
 import com.familyfood.dish.dto.StatusRequest;
 import com.familyfood.dish.dto.TagRequest;
-import com.familyfood.dish.entity.Dish;
 import com.familyfood.dish.entity.DishCategory;
 import com.familyfood.dish.entity.DishTag;
 import com.familyfood.dish.service.DishApplicationService;
@@ -16,6 +15,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 public class DishController {
     private final DishApplicationService dishService;
 
+    @Autowired
     public DishController(DishApplicationService dishService) {
         this.dishService = dishService;
     }

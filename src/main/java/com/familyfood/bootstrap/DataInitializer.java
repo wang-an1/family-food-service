@@ -1,7 +1,6 @@
 package com.familyfood.bootstrap;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.familyfood.ai.provider.AiProvider;
 import com.familyfood.auth.dao.UserMapper;
 import com.familyfood.auth.entity.User;
 import com.familyfood.config.AppProperties;
@@ -29,6 +28,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -49,6 +49,7 @@ public class DataInitializer implements CommandLineRunner {
     private final MealSessionMapper mealSessionMapper;
     private final SystemConfigMapper configMapper;
 
+    @Autowired
     public DataInitializer(AppProperties properties, PasswordEncoder passwordEncoder, FamilyMapper familyMapper,
                            UserMapper userMapper, FamilyMemberMapper memberMapper, DishCategoryMapper categoryMapper,
                            DishTagMapper tagMapper, DishMapper dishMapper, DishIngredientMapper ingredientMapper,

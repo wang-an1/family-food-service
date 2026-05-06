@@ -22,17 +22,12 @@ spring:
       org.quartz.jobStore.driverDelegateClass: org.quartz.impl.jdbcjobstore.StdJDBCDelegate
       org.quartz.jobStore.tablePrefix: QRTZ_
       org.quartz.jobStore.isClustered: false
-  ai:
-    openai:
-      base-url: ${AI_BASE_URL:https://api.deepseek.com}
-      api-key: "${DEEPSEEK_API_KEY:${AI_API_KEY:}}"
-      chat:
-        enabled: ${AI_OPENAI_ENABLED:false}
-        options:
-          model: "${DEEPSEEK_CHAT_MODEL:${AI_CHAT_MODEL:deepseek-v4}}"
-
 server:
   port: 8080
+
+logging:
+  file:
+    path: logs
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
@@ -44,14 +39,14 @@ mybatis-plus:
 
 family-food:
   jwt:
-    secret: ${JWT_SECRET:dev-only-family-food-secret-dev-only-family-food-secret}
-    ttl-minutes: ${JWT_TTL_MINUTES:1440}
-  upload-dir: ${UPLOAD_DIR:./uploads}
-  init-admin-password: ${INIT_ADMIN_PASSWORD:admin123}
-  cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174}
-  ai-provider: ${AI_PROVIDER:deepseek}
+    secret: dev-only-family-food-secret-dev-only-family-food-secret
+    ttl-minutes: 1440
+  upload-dir: ./uploads
+  init-admin-password: admin123
+  cors-allowed-origins: http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174
+  ai-provider: deepseek
   ai:
-    base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
-    api-key: "${DEEPSEEK_API_KEY:${AI_API_KEY:}}"
-    chat-model: "${DEEPSEEK_CHAT_MODEL:${AI_CHAT_MODEL:deepseek-v4}}"
-    timeout-seconds: ${AI_TIMEOUT_SECONDS:30}
+    base-url: https://api.deepseek.com
+    api-key: ""
+    chat-model: deepseek-v4-pro
+    timeout-seconds: 30

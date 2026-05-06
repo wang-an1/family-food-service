@@ -5,6 +5,7 @@ import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Component;
 public class DelegatingScheduledTaskJob implements Job {
     private final ScheduledTaskService scheduledTaskService;
 
+    @Autowired
     public DelegatingScheduledTaskJob(ScheduledTaskService scheduledTaskService) {
         this.scheduledTaskService = scheduledTaskService;
     }
