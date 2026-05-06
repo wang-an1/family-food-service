@@ -119,11 +119,11 @@ public class ShoppingListService {
 
     private void ensureItemAccess(ActorContext actor, ShoppingListItem item) {
         if (item == null) {
-            throw AppException.notFound("Shopping item not found");
+            throw AppException.notFound("未找到采购条目");
         }
         ShoppingList list = listMapper.selectById(item.getShoppingListId());
         if (list == null || !Objects.equals(list.getFamilyId(), actor.familyId())) {
-            throw AppException.notFound("Shopping item not found");
+            throw AppException.notFound("未找到采购条目");
         }
     }
 

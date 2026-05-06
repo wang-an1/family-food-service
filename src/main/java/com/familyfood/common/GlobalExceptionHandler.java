@@ -3,6 +3,7 @@ package com.familyfood.common;
 import jakarta.validation.ConstraintViolationException;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -39,7 +40,10 @@ public class GlobalExceptionHandler {
     ResponseEntity<ApiResponse<Void>> handleConstraint(ConstraintViolationException ex) {
         List<ApiResponse.ErrorDetail> errors = ex.getConstraintViolations().stream()
                 .map(violation -> new ApiResponse.ErrorDetail(
-                        violation.getPropertyPath().toString(), violation.getMessage()))
+                        violation.getPropertyPath().toString(),
+                        validationMessage(violation.getPropertyPath().toString(),
+                                violation.getConstraintDescriptor().getAnnotation().annotationType().getSimpleName(),
+                                violation.getConstraintDescriptor().getAttributes())))
                 .toList();
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
                 .body(ApiResponse.error("VALIDATION_ERROR", "请求参数校验失败", errors));
@@ -94,6 +98,54 @@ public class GlobalExceptionHandler {
     }
 
     private ApiResponse.ErrorDetail fieldError(FieldError error) {
-        return new ApiResponse.ErrorDetail(error.getField(), error.getDefaultMessage());
+        return new ApiResponse.ErrorDetail(error.getField(), validationMessage(error));
+    }
+
+    private String validationMessage(FieldError error) {
+        try {
+            jakarta.validation.ConstraintViolation<?> violation = error.unwrap(jakarta.validation.ConstraintViolation.class);
+            return validationMessage(error.getField(),
+                    violation.getConstraintDescriptor().getAnnotation().annotationType().getSimpleName(),
+                    violation.getConstraintDescriptor().getAttributes());
+        } catch (IllegalArgumentException ex) {
+            return validationMessage(error.getField(), error.getCode(), Map.of());
+        }
+    }
+
+    private String validationMessage(String field, String code, Map<String, Object> attributes) {
+        String name = FieldNames.displayName(field);
+        return switch (code == null ? "" : code) {
+            case "NotBlank", "NotEmpty", "NotNull" -> name + "不能为空";
+            case "Size" -> sizeMessage(name, attributes);
+            case "Min" -> name + "不能小于 " + attributes.getOrDefault("value", "最小值");
+            case "Max" -> name + "不能大于 " + attributes.getOrDefault("value", "最大值");
+            case "Positive" -> name + "必须大于 0";
+            case "Pattern" -> name + "格式不正确";
+            case "Email" -> name + "邮箱格式不正确";
+            case "Future" -> name + "必须是未来时间";
+            case "FutureOrPresent" -> name + "不能早于当前时间";
+            case "Past" -> name + "必须是过去时间";
+            case "PastOrPresent" -> name + "不能晚于当前时间";
+            default -> name + "不符合要求";
+        };
+    }
+
+    private String sizeMessage(String name, Map<String, Object> attributes) {
+        int min = number(attributes.get("min"), 0);
+        int max = number(attributes.get("max"), Integer.MAX_VALUE);
+        if (min <= 0 && max < Integer.MAX_VALUE) {
+            return name + "不能超过 " + max + " 个字符";
+        }
+        if (max == Integer.MAX_VALUE) {
+            return name + "不能少于 " + min + " 个字符";
+        }
+        return name + "长度需在 " + min + " 到 " + max + " 个字符之间";
+    }
+
+    private int number(Object value, int defaultValue) {
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        return defaultValue;
     }
 }

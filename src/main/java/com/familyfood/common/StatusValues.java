@@ -35,7 +35,7 @@ public final class StatusValues {
     public static String required(String value, Set<String> allowed, String field) {
         String normalized = value == null ? "" : value.trim().toUpperCase();
         if (!allowed.contains(normalized)) {
-            throw AppException.validation(field + " 取值不合法，允许：" + String.join(", ", allowed));
+            throw AppException.validation(FieldNames.displayName(field) + "取值不合法，请重新选择");
         }
         return normalized;
     }

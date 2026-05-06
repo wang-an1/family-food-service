@@ -1,6 +1,7 @@
 package com.familyfood.system.scheduler;
 
 import com.familyfood.common.AppException;
+import com.familyfood.common.FieldNames;
 import com.familyfood.common.StatusValues;
 import com.familyfood.system.dto.ScheduleConfig;
 import com.familyfood.system.entity.ScheduledTask;
@@ -40,7 +41,7 @@ public class ScheduledTaskSchedulePlanner {
             case "WEEKLY" -> weeklyPlan(mode, safeConfig, zone);
             case "MONTHLY" -> monthlyPlan(mode, safeConfig, zone);
             case "CRON" -> cronPlan(mode, cronExpression, safeConfig, zone);
-            default -> throw AppException.validation("Unsupported schedule mode");
+            default -> throw AppException.validation("计划模式不支持");
         };
     }
 
@@ -77,7 +78,7 @@ public class ScheduledTaskSchedulePlanner {
         int interval = requirePositive(config.interval(), "scheduleConfig.interval");
         String unit = config.intervalUnit() == null ? "" : config.intervalUnit().trim().toUpperCase(Locale.ROOT);
         if (!List.of("MINUTES", "HOURS").contains(unit)) {
-            throw AppException.validation("scheduleConfig.intervalUnit must be MINUTES or HOURS");
+            throw AppException.validation("间隔单位只能选择分钟或小时");
         }
         String cron = "MINUTES".equals(unit)
                 ? "0 0/" + interval + " * * * ?"
@@ -93,7 +94,7 @@ public class ScheduledTaskSchedulePlanner {
         LocalTime time = parseTime(config.timeOfDay());
         List<Integer> days = config.daysOfWeek();
         if (days == null || days.isEmpty()) {
-            throw AppException.validation("scheduleConfig.daysOfWeek is required");
+            throw AppException.validation("每周执行日期不能为空");
         }
         String dayExpression = days.stream()
                 .map(this::dayName)
@@ -110,7 +111,7 @@ public class ScheduledTaskSchedulePlanner {
         LocalTime time = parseTime(config.timeOfDay());
         int day = requirePositive(config.dayOfMonth(), "scheduleConfig.dayOfMonth");
         if (day > 31) {
-            throw AppException.validation("scheduleConfig.dayOfMonth must be between 1 and 31");
+            throw AppException.validation("每月执行日期必须在 1 到 31 之间");
         }
         return new PlannedSchedule(mode,
                 "0 " + time.getMinute() + " " + time.getHour() + " " + day + " * ?",
@@ -120,14 +121,14 @@ public class ScheduledTaskSchedulePlanner {
 
     private PlannedSchedule cronPlan(String mode, String cronExpression, ScheduleConfig config, ZoneId zone) {
         if (cronExpression == null || cronExpression.isBlank()) {
-            throw AppException.validation("cronExpression is required");
+            throw AppException.validation("Cron 表达式不能为空");
         }
         String cron = cronExpression.trim();
         if (!CronExpression.isValidExpression(cron)) {
-            throw AppException.validation("cronExpression is not a valid Quartz cron expression");
+            throw AppException.validation("Cron 表达式格式不正确");
         }
         if (cronPreview(cron, zone, 1).isEmpty()) {
-            throw AppException.validation("cronExpression has no future fire time");
+            throw AppException.validation("Cron 表达式没有未来的执行时间");
         }
         return new PlannedSchedule(mode, cron, config, zone);
     }
@@ -182,17 +183,17 @@ public class ScheduledTaskSchedulePlanner {
             }
             return times;
         } catch (ParseException ex) {
-            throw AppException.validation("cronExpression is not a valid Quartz cron expression");
+            throw AppException.validation("Cron 表达式格式不正确");
         }
     }
 
     private LocalDateTime parseRunAt(ScheduleConfig config, ZoneId zone) {
         LocalDateTime runAt = parseOptionalDateTime(config.runAt(), zone);
         if (runAt == null) {
-            throw AppException.validation("scheduleConfig.runAt is required");
+            throw AppException.validation("执行时间不能为空");
         }
         if (!runAt.isAfter(LocalDateTime.now(zone))) {
-            throw AppException.validation("scheduleConfig.runAt must be in the future");
+            throw AppException.validation("执行时间必须晚于当前时间");
         }
         return runAt;
     }
@@ -204,18 +205,18 @@ public class ScheduledTaskSchedulePlanner {
         try {
             return LocalDateTime.parse(value.trim());
         } catch (DateTimeException ex) {
-            throw AppException.validation("datetime must use ISO format, for example 2026-04-29T18:30:00");
+            throw AppException.validation("日期时间格式不正确，请使用类似 2026-04-29T18:30:00 的格式");
         }
     }
 
     private LocalTime parseTime(String value) {
         if (value == null || value.isBlank()) {
-            throw AppException.validation("scheduleConfig.timeOfDay is required");
+            throw AppException.validation("执行时间不能为空");
         }
         try {
             return LocalTime.parse(value.trim(), TIME_FORMAT);
         } catch (DateTimeException ex) {
-            throw AppException.validation("scheduleConfig.timeOfDay must use HH:mm format");
+            throw AppException.validation("执行时间格式不正确，请使用 HH:mm 格式");
         }
     }
 
@@ -225,7 +226,7 @@ public class ScheduledTaskSchedulePlanner {
 
     private int requirePositive(Integer value, String field) {
         if (value == null || value <= 0) {
-            throw AppException.validation(field + " must be greater than 0");
+            throw AppException.validation(FieldNames.displayName(field) + "必须大于 0");
         }
         return value;
     }
@@ -239,7 +240,7 @@ public class ScheduledTaskSchedulePlanner {
             case 5 -> "FRI";
             case 6 -> "SAT";
             case 7 -> "SUN";
-            default -> throw AppException.validation("scheduleConfig.daysOfWeek values must be between 1 and 7");
+            default -> throw AppException.validation("每周执行日期必须在 1 到 7 之间");
         };
     }
 
@@ -247,7 +248,7 @@ public class ScheduledTaskSchedulePlanner {
         try {
             return ZoneId.of(timeZone == null || timeZone.isBlank() ? DEFAULT_ZONE : timeZone.trim());
         } catch (DateTimeException ex) {
-            throw AppException.validation("scheduleConfig.timeZone is invalid");
+            throw AppException.validation("时区格式不正确");
         }
     }
 

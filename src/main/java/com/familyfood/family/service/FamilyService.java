@@ -36,7 +36,7 @@ public class FamilyService {
         ActorContext actor = actorProvider.current();
         Family family = familyMapper.selectById(actor.familyId());
         if (family == null) {
-            throw AppException.notFound("Family not found");
+            throw AppException.notFound("未找到家庭");
         }
         return family;
     }
@@ -53,7 +53,7 @@ public class FamilyService {
         actor.requireAdmin();
         FamilyMember member = memberMapper.selectById(id);
         if (member == null || !Objects.equals(member.getFamilyId(), actor.familyId())) {
-            throw AppException.notFound("Member not found");
+            throw AppException.notFound("未找到家庭成员");
         }
         if (request.role() != null) {
             member.setRole(request.role());

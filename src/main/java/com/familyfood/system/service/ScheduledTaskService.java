@@ -196,7 +196,7 @@ public class ScheduledTaskService {
             return toResponse(task);
         } catch (SchedulerException ex) {
             log.warn("scheduled_task_trigger_failed taskId={}", id, ex);
-            throw AppException.serviceUnavailable("SCHEDULER_ERROR", "Failed to trigger scheduled task");
+            throw AppException.serviceUnavailable("SCHEDULER_ERROR", "触发定时任务失败，请稍后重试");
         }
     }
 
@@ -208,7 +208,7 @@ public class ScheduledTaskService {
             scheduler.unscheduleJob(triggerKey(task));
             scheduler.deleteJob(jobKey(task));
         } catch (SchedulerException ex) {
-            throw AppException.serviceUnavailable("SCHEDULER_ERROR", "Failed to delete scheduled task from Quartz");
+            throw AppException.serviceUnavailable("SCHEDULER_ERROR", "删除定时任务失败，请稍后重试");
         }
         taskMapper.deleteById(id);
     }
@@ -258,7 +258,7 @@ public class ScheduledTaskService {
         try {
             ScheduledTaskHandler handler = registry.get(task.getTaskType());
             if (handler == null) {
-                throw new IllegalStateException("Scheduled task handler is missing: " + task.getTaskType());
+                throw new IllegalStateException("缺少定时任务处理器：" + task.getTaskType());
             }
             handler.execute(new ScheduledTaskExecutionContext(
                     task.getId(), task.getTaskType(), parseMap(task.getParametersJson()), manual));
@@ -291,7 +291,7 @@ public class ScheduledTaskService {
                 scheduler.resumeTrigger(triggerKey(task));
             }
         } catch (SchedulerException ex) {
-            throw AppException.serviceUnavailable("SCHEDULER_ERROR", "Failed to synchronize scheduled task with Quartz");
+            throw AppException.serviceUnavailable("SCHEDULER_ERROR", "同步定时任务失败，请稍后重试");
         }
     }
 
@@ -301,7 +301,7 @@ public class ScheduledTaskService {
                 scheduler.pauseTrigger(triggerKey(task));
             }
         } catch (SchedulerException ex) {
-            throw AppException.serviceUnavailable("SCHEDULER_ERROR", "Failed to pause scheduled task");
+            throw AppException.serviceUnavailable("SCHEDULER_ERROR", "暂停定时任务失败，请稍后重试");
         }
     }
 
@@ -397,21 +397,21 @@ public class ScheduledTaskService {
     private ScheduledTask requireTask(Long id) {
         ScheduledTask task = taskMapper.selectById(id);
         if (task == null) {
-            throw AppException.notFound("Scheduled task not found");
+            throw AppException.notFound("未找到定时任务");
         }
         return task;
     }
 
     private void requireHandler(String type) {
         if (!registry.has(type)) {
-            throw AppException.validation("Scheduled task type is not available: " + type);
+            throw AppException.validation("定时任务类型不可用，请重新选择");
         }
     }
 
     private UserPrincipal requireGlobalAdmin() {
         UserPrincipal principal = CurrentUser.get();
         if (!Role.ADMIN.name().equals(principal.role()) || !"admin".equals(principal.username())) {
-            throw AppException.forbidden("Only global admin can manage scheduled tasks");
+            throw AppException.forbidden("仅全局管理员可管理定时任务");
         }
         return principal;
     }
@@ -428,7 +428,7 @@ public class ScheduledTaskService {
         try {
             return value == null ? null : objectMapper.writeValueAsString(value);
         } catch (JsonProcessingException ex) {
-            throw AppException.validation("JSON value is invalid");
+            throw AppException.validation("JSON 数据格式不正确");
         }
     }
 
@@ -439,7 +439,7 @@ public class ScheduledTaskService {
         try {
             return objectMapper.readValue(task.getScheduleConfigJson(), ScheduleConfig.class);
         } catch (JsonProcessingException ex) {
-            throw AppException.validation("Stored schedule config is invalid");
+            throw AppException.validation("已保存的计划配置格式不正确");
         }
     }
 
@@ -450,7 +450,7 @@ public class ScheduledTaskService {
         try {
             return objectMapper.readValue(json, MAP_TYPE);
         } catch (JsonProcessingException ex) {
-            throw AppException.validation("Stored parameters are invalid");
+            throw AppException.validation("已保存的任务参数格式不正确");
         }
     }
 
@@ -471,7 +471,9 @@ public class ScheduledTaskService {
     }
 
     private String shortMessage(Exception ex) {
-        String message = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
+        String message = ex instanceof AppException && ex.getMessage() != null
+                ? ex.getMessage()
+                : "任务执行失败，请查看服务日志";
         return message.length() > 1000 ? message.substring(0, 1000) : message;
     }
 }

@@ -59,6 +59,6 @@ public class RoutingAiProvider implements AiProvider {
                 || "openai-compatible".equalsIgnoreCase(provider)) {
             return deepSeekProvider.isConfigured() ? deepSeekProvider : mockProvider;
         }
-        throw AppException.badRequest("不支持的 AI Provider：" + provider);
+        throw AppException.badRequest("当前 AI 服务提供方暂不支持，请检查系统配置");
     }
 }

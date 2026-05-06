@@ -55,11 +55,11 @@ public class OrderDomainService {
     @Transactional
     public OrderResponse submit(ActorContext actor, OrderRequest request) {
         if (request.items() == null || request.items().isEmpty()) {
-            throw AppException.validation("At least one dish is required");
+            throw AppException.validation("请至少选择一道菜");
         }
         MealSession session = mealSessionService.requireFamilySession(actor, request.mealSessionId());
         if (!"OPEN".equals(session.getStatus())) {
-            throw AppException.conflict("Meal session is not open");
+            throw AppException.conflict("餐次未开放，不能下单");
         }
         LocalDateTime now = LocalDateTime.now();
         PersonalOrder order = new PersonalOrder();
@@ -87,10 +87,10 @@ public class OrderDomainService {
         PersonalOrder order = ownedOrder(actor, id);
         boolean owner = Objects.equals(order.getUserId(), actor.userId());
         if (!actor.admin() && (!owner || !"PENDING_CONFIRM".equals(order.getStatus()))) {
-            throw AppException.forbidden("Only pending own orders can be updated");
+            throw AppException.forbidden("只能修改自己待确认的订单");
         }
         if (!"PENDING_CONFIRM".equals(order.getStatus()) && !actor.admin()) {
-            throw AppException.conflict("Order status cannot be updated");
+            throw AppException.conflict("当前订单状态不能修改");
         }
         order.setNote(request.note());
         order.setAvoidances(request.avoidances());
@@ -106,7 +106,7 @@ public class OrderDomainService {
     public OrderResponse confirm(ActorContext actor, Long id, String note) {
         PersonalOrder order = ownedOrder(actor, id);
         if (!"PENDING_CONFIRM".equals(order.getStatus())) {
-            throw AppException.conflict("Only pending orders can be confirmed");
+            throw AppException.conflict("只有待确认订单可以确认");
         }
         String from = order.getStatus();
         order.setStatus("CONFIRMED");
@@ -123,13 +123,13 @@ public class OrderDomainService {
         PersonalOrder order = ownedOrder(actor, id);
         boolean owner = Objects.equals(order.getUserId(), actor.userId());
         if (!actor.admin() && !owner) {
-            throw AppException.forbidden("Only own orders can be cancelled");
+            throw AppException.forbidden("只能取消自己的订单");
         }
         if (!actor.admin() && !List.of("DRAFT", "SUBMITTED", "PENDING_CONFIRM").contains(order.getStatus())) {
-            throw AppException.conflict("Order status cannot be cancelled");
+            throw AppException.conflict("当前订单状态不能取消");
         }
         if (List.of("COMPLETED", "CANCELLED").contains(order.getStatus())) {
-            throw AppException.conflict("Order status cannot be cancelled");
+            throw AppException.conflict("当前订单状态不能取消");
         }
         String from = order.getStatus();
         order.setStatus("CANCELLED");
@@ -149,7 +149,7 @@ public class OrderDomainService {
         PersonalOrder order = ownedOrder(actor, id);
         OrderView view = orderMapper.selectOrderViewById(order.getId(), actor.familyId());
         if (view == null) {
-            throw AppException.notFound("Order not found");
+            throw AppException.notFound("未找到订单");
         }
         return toResponses(List.of(view)).get(0);
     }
@@ -166,17 +166,17 @@ public class OrderDomainService {
         PersonalOrder order = orderMapper.selectById(id);
         if (order == null || !Objects.equals(order.getFamilyId(), actor.familyId())
                 || Objects.equals(order.getDeleted(), 1)) {
-            throw AppException.notFound("Order not found");
+            throw AppException.notFound("未找到订单");
         }
         if (!actor.admin() && !Objects.equals(order.getUserId(), actor.userId())) {
-            throw AppException.forbidden("No permission to access this order");
+            throw AppException.forbidden("无权限访问该订单");
         }
         return order;
     }
 
     private void insertItems(ActorContext actor, Long orderId, List<OrderItemRequest> items) {
         if (items == null || items.isEmpty()) {
-            throw AppException.validation("At least one dish is required");
+            throw AppException.validation("请至少选择一道菜");
         }
         Set<Long> dishIds = items.stream()
                 .map(OrderItemRequest::dishId)

@@ -39,7 +39,7 @@ public class IntentApplicationService {
     public IntentResponse submit(IntentSubmitRequest request) {
         ActorContext actor = actorProvider.current();
         if (blank(request.inputText()) && blank(request.sourceUrl()) && blank(request.imageUrl())) {
-            throw AppException.validation("inputText, sourceUrl, or imageUrl is required");
+            throw AppException.validation("请至少填写文字、来源链接或图片链接");
         }
         SourceType sourceType = detector.detect(request.sourceUrl(), request.inputText(), request.imageUrl());
         Long taskId;
@@ -79,10 +79,10 @@ public class IntentApplicationService {
         ActorContext actor = actorProvider.current();
         IntentRequest intent = intentMapper.selectById(id);
         if (intent == null || !Objects.equals(intent.getFamilyId(), actor.familyId())) {
-            throw AppException.notFound("Intent not found");
+            throw AppException.notFound("未找到意向记录");
         }
         if (!actor.admin() && !Objects.equals(intent.getUserId(), actor.userId())) {
-            throw AppException.forbidden("No permission to access this intent");
+            throw AppException.forbidden("无权限访问该意向记录");
         }
         return intent;
     }

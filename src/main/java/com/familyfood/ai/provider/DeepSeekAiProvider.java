@@ -175,7 +175,7 @@ public class DeepSeekAiProvider implements AiProvider {
     private String chat(String systemPrompt, String userPrompt, boolean jsonMode) {
         String key = apiKey();
         if (key.isBlank()) {
-            throw AppException.badRequest("请先在系统配置中设置 DeepSeek API Key");
+            throw AppException.badRequest("请先在系统配置中设置 DeepSeek 密钥");
         }
         String endpoint = chatEndpoint();
         String model = chatModel();

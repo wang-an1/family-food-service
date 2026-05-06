@@ -18,7 +18,7 @@ public class UrlSafety {
             throw AppException.validation("链接格式不正确");
         }
         if (!"http".equalsIgnoreCase(uri.getScheme()) && !"https".equalsIgnoreCase(uri.getScheme())) {
-            throw AppException.validation("只支持 http/https 链接");
+            throw AppException.validation("只支持 HTTP 或 HTTPS 链接");
         }
         String host = uri.getHost();
         if (host == null || host.isBlank()) {

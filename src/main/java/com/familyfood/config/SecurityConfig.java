@@ -50,9 +50,9 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(errors -> errors
                         .authenticationEntryPoint((request, response, ex) ->
-                                writeError(response, HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Authentication required"))
+                                writeError(response, HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "请先登录"))
                         .accessDeniedHandler((request, response, ex) ->
-                                writeError(response, HttpStatus.FORBIDDEN, "FORBIDDEN", "Forbidden")))
+                                writeError(response, HttpStatus.FORBIDDEN, "FORBIDDEN", "无权限")))
                 .headers(headers -> headers
                         .frameOptions(frameOptions -> frameOptions.sameOrigin())
                         .referrerPolicy(referrerPolicy -> referrerPolicy.policy(

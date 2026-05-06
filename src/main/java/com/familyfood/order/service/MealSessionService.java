@@ -40,7 +40,7 @@ public class MealSessionService implements MealSessionApi {
                 .orderByDesc("meal_date", "id")
                 .last("limit 1"));
         if (session == null) {
-            throw AppException.notFound("No open meal session");
+            throw AppException.notFound("当前没有开放中的餐次");
         }
         return session;
     }
@@ -70,7 +70,7 @@ public class MealSessionService implements MealSessionApi {
     public MealSession requireFamilySession(ActorContext actor, Long mealSessionId) {
         MealSession session = mealSessionMapper.selectById(mealSessionId);
         if (session == null || !Objects.equals(session.getFamilyId(), actor.familyId())) {
-            throw AppException.notFound("Meal session not found");
+            throw AppException.notFound("未找到餐次");
         }
         return session;
     }
