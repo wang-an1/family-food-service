@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.familyfood.dish.dao.DishIngredientMapper">
+    <select id="selectByDishIds" resultType="com.familyfood.dish.entity.DishIngredient">
+        select
+            id,
+            dish_id,
+            name,
+            amount,
+            unit,
+            category,
+            required,
+            note
+        from dish_ingredient
+        where dish_id in
+        <foreach collection="dishIds" item="dishId" open="(" separator="," close=")">
+            #{dishId}
+        </foreach>
+        order by dish_id asc, id asc
+    </select>
+</mapper>

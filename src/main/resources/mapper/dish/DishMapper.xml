@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.familyfood.dish.dao.DishMapper">
+    <resultMap id="DishViewMap" type="com.familyfood.dish.dto.DishView">
+        <id property="id" column="id"/>
+        <result property="familyId" column="family_id"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="name" column="name"/>
+        <result property="aliases" column="aliases"/>
+        <result property="description" column="description"/>
+        <result property="imageUrl" column="image_url"/>
+        <result property="taste" column="taste"/>
+        <result property="mealTypes" column="meal_types"/>
+        <result property="difficulty" column="difficulty"/>
+        <result property="estimatedMinutes" column="estimated_minutes"/>
+        <result property="defaultServings" column="default_servings"/>
+        <result property="instructions" column="instructions"/>
+        <result property="sourceType" column="source_type"/>
+        <result property="sourceUrl" column="source_url"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updatedBy" column="updated_by"/>
+        <result property="deleted" column="deleted"/>
+        <result property="categoryName" column="category_name"/>
+    </resultMap>
+
+    <sql id="DishViewColumns">
+        d.id,
+        d.family_id,
+        d.category_id,
+        d.name,
+        d.aliases,
+        d.description,
+        d.image_url,
+        d.taste,
+        d.meal_types,
+        d.difficulty,
+        d.estimated_minutes,
+        d.default_servings,
+        d.instructions,
+        d.source_type,
+        d.source_url,
+        d.status,
+        d.created_at,
+        d.updated_at,
+        d.created_by,
+        d.updated_by,
+        d.deleted,
+        c.name as category_name
+    </sql>
+
+    <select id="selectDishViews" resultMap="DishViewMap">
+        select
+        <include refid="DishViewColumns"/>
+        from dish d
+        left join dish_category c on c.id = d.category_id and c.family_id = d.family_id
+        <if test="tagId != null">
+            inner join dish_tag_relation dtr on dtr.dish_id = d.id and dtr.tag_id = #{tagId}
+        </if>
+        <where>
+            d.family_id = #{familyId}
+            and d.deleted = 0
+            <if test="keyword != null and keyword != ''">
+                and (
+                    d.name like concat('%', #{keyword}, '%')
+                    or d.aliases like concat('%', #{keyword}, '%')
+                    or d.description like concat('%', #{keyword}, '%')
+                )
+            </if>
+            <if test="categoryId != null">
+                and d.category_id = #{categoryId}
+            </if>
+            <if test="status != null and status != ''">
+                and d.status = #{status}
+            </if>
+            <if test="(status == null or status == '') and activeOnly">
+                and d.status = 'ACTIVE'
+            </if>
+        </where>
+        order by d.updated_at desc, d.id asc
+    </select>
+
+    <select id="selectDishViewById" resultMap="DishViewMap">
+        select
+        <include refid="DishViewColumns"/>
+        from dish d
+        left join dish_category c on c.id = d.category_id and c.family_id = d.family_id
+        where d.id = #{id}
+          and d.family_id = #{familyId}
+          and d.deleted = 0
+        <if test="activeOnly">
+            and d.status = 'ACTIVE'
+        </if>
+        limit 1
+    </select>
+</mapper>

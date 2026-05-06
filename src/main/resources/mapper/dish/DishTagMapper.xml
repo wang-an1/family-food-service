@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.familyfood.dish.dao.DishTagMapper">
+    <resultMap id="DishTagViewMap" type="com.familyfood.dish.dto.DishTagView">
+        <id property="id" column="id"/>
+        <result property="familyId" column="family_id"/>
+        <result property="name" column="name"/>
+        <result property="color" column="color"/>
+        <result property="dishId" column="dish_id"/>
+    </resultMap>
+
+    <select id="selectByDishIds" resultMap="DishTagViewMap">
+        select
+            dtr.dish_id,
+            t.id,
+            t.family_id,
+            t.name,
+            t.color
+        from dish_tag_relation dtr
+        inner join dish_tag t on t.id = dtr.tag_id
+        where dtr.dish_id in
+        <foreach collection="dishIds" item="dishId" open="(" separator="," close=")">
+            #{dishId}
+        </foreach>
+        order by dtr.dish_id asc, t.id asc
+    </select>
+</mapper>

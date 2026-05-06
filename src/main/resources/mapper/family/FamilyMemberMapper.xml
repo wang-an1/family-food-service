@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.familyfood.family.dao.FamilyMemberMapper">
+    <resultMap id="MemberResponseMap" type="com.familyfood.family.dto.MemberResponse">
+        <constructor>
+            <arg column="id" javaType="java.lang.Long"/>
+            <arg column="user_id" javaType="java.lang.Long"/>
+            <arg column="username" javaType="java.lang.String"/>
+            <arg column="nickname" javaType="java.lang.String"/>
+            <arg column="role" javaType="java.lang.String"/>
+            <arg column="display_name" javaType="java.lang.String"/>
+            <arg column="status" javaType="java.lang.String"/>
+        </constructor>
+    </resultMap>
+
+    <select id="selectMemberResponses" resultMap="MemberResponseMap">
+        select
+            fm.id,
+            fm.user_id,
+            u.username,
+            u.nickname,
+            fm.role,
+            fm.display_name,
+            fm.status
+        from family_member fm
+        left join `user` u on u.id = fm.user_id
+        where fm.family_id = #{familyId}
+        order by fm.id asc
+    </select>
+</mapper>

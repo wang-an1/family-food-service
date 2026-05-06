@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.familyfood.order.dao.PersonalOrderMapper">
+    <resultMap id="OrderViewMap" type="com.familyfood.order.dto.OrderView">
+        <id property="id" column="id"/>
+        <result property="familyId" column="family_id"/>
+        <result property="mealSessionId" column="meal_session_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="status" column="status"/>
+        <result property="note" column="note"/>
+        <result property="avoidances" column="avoidances"/>
+        <result property="expectedTime" column="expected_time"/>
+        <result property="submittedAt" column="submitted_at"/>
+        <result property="confirmedAt" column="confirmed_at"/>
+        <result property="confirmedBy" column="confirmed_by"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="deleted"/>
+        <result property="userNickname" column="user_nickname"/>
+    </resultMap>
+
+    <sql id="OrderViewColumns">
+        po.id,
+        po.family_id,
+        po.meal_session_id,
+        po.user_id,
+        po.status,
+        po.note,
+        po.avoidances,
+        po.expected_time,
+        po.submitted_at,
+        po.confirmed_at,
+        po.confirmed_by,
+        po.created_at,
+        po.updated_at,
+        po.deleted,
+        u.nickname as user_nickname
+    </sql>
+
+    <select id="selectOrderViews" resultMap="OrderViewMap">
+        select
+        <include refid="OrderViewColumns"/>
+        from personal_order po
+        left join `user` u on u.id = po.user_id
+        <where>
+            po.family_id = #{familyId}
+            and po.deleted = 0
+            <if test="mealSessionId != null">
+                and po.meal_session_id = #{mealSessionId}
+            </if>
+            <if test="status != null and status != ''">
+                and po.status = #{status}
+            </if>
+            <if test="userId != null">
+                and po.user_id = #{userId}
+            </if>
+        </where>
+        order by po.created_at desc, po.id desc
+    </select>
+
+    <select id="selectOrderViewById" resultMap="OrderViewMap">
+        select
+        <include refid="OrderViewColumns"/>
+        from personal_order po
+        left join `user` u on u.id = po.user_id
+        where po.id = #{id}
+          and po.family_id = #{familyId}
+          and po.deleted = 0
+        limit 1
+    </select>
+
+    <select id="selectDishQuantitySummary" resultType="com.familyfood.order.dto.DishQuantitySummary">
+        select
+            oi.dish_name_snapshot,
+            sum(oi.quantity) as amount
+        from personal_order po
+        inner join order_item oi on oi.order_id = po.id
+        where po.family_id = #{familyId}
+          and po.meal_session_id = #{mealSessionId}
+          and po.deleted = 0
+          and po.status in ('CONFIRMED', 'COOKING', 'COMPLETED')
+        group by oi.dish_name_snapshot
+        order by oi.dish_name_snapshot asc
+    </select>
+</mapper>

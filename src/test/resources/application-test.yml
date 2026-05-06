@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/family_food_test?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  flyway:
+    clean-disabled: false
+
+family-food:
+  jwt:
+    secret: test-family-food-secret-test-family-food-secret
+    ttl-minutes: 60
+  upload-dir: ./build/test-uploads
+  init-admin-password: admin123
+  cors-allowed-origins: http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174
+  ai-provider: mock

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.familyfood.shopping.dao.ShoppingListItemMapper">
+    <select id="selectDishIngredientSummaries" resultType="com.familyfood.shopping.dto.ShoppingIngredientSummary">
+        select
+            di.name,
+            sum(coalesce(di.amount, 0) * coalesce(oi.quantity, 1)) as amount,
+            di.unit,
+            di.category,
+            group_concat(distinct oi.dish_id order by oi.dish_id separator ',') as source_dish_ids
+        from personal_order po
+        inner join order_item oi on oi.order_id = po.id
+        inner join dish_ingredient di on di.dish_id = oi.dish_id
+        where po.family_id = #{familyId}
+          and po.meal_session_id = #{mealSessionId}
+          and po.deleted = 0
+          and po.status in ('CONFIRMED', 'COOKING', 'COMPLETED')
+        group by di.name, di.unit, di.category
+        order by di.category asc, di.name asc
+    </select>
+</mapper>
