@@ -39,7 +39,7 @@ public class FamilyServiceImpl implements FamilyService {
         ActorContext actor = actorProvider.current();
         Family family = familyMapper.selectById(actor.familyId());
         if (family == null) {
-            throw AppException.notFound("未找到家庭");
+            throw AppException.notFound("未找到当前家庭，请刷新后再试");
         }
         return family;
     }
@@ -56,7 +56,7 @@ public class FamilyServiceImpl implements FamilyService {
         actor.requireAdmin();
         FamilyMember member = memberMapper.selectById(id);
         if (member == null || !Objects.equals(member.getFamilyId(), actor.familyId())) {
-            throw AppException.notFound("未找到家庭成员");
+            throw AppException.notFound("未找到这位家庭成员，请刷新后再试");
         }
         if (request.role() != null) {
             member.setRole(request.role());

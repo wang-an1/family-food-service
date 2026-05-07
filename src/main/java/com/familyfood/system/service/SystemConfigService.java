@@ -13,4 +13,6 @@ public interface SystemConfigService extends SystemConfigApi {
     boolean bool(String key, boolean defaultValue);
 
     String value(String key, String defaultValue);
+
+    String secretValue(String key, String defaultValue);
 }

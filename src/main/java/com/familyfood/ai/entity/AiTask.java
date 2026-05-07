@@ -38,7 +38,7 @@ public class AiTask {
     private String errorMessage;
     @Schema(description = "重试次数", example = "0")
     private Integer retryCount;
-    @Schema(description = "模型名称", example = "deepseek-v4")
+    @Schema(description = "模型名称", example = "deepseek-v4-pro")
     private String modelName;
     @Schema(description = "提示词 token 数", example = "120")
     private Integer promptTokens;

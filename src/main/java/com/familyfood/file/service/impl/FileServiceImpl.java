@@ -34,17 +34,17 @@ public class FileServiceImpl implements FileService {
     public UploadResponse upload(MultipartFile file, String bizType) throws IOException {
         if (file.isEmpty()) {
             log.info("file_upload_rejected reason=empty bizType={} originalFilename={}", bizType, file.getOriginalFilename());
-            throw AppException.validation("文件不能为空");
+            throw AppException.validation("请先选择要上传的文件");
         }
         String original = file.getOriginalFilename() == null ? "image" : file.getOriginalFilename();
         String ext = extension(original);
         if (!ALLOWED.contains(ext)) {
             log.info("file_upload_rejected reason=extension bizType={} originalFilename={} extension={}", bizType, original, ext);
-            throw AppException.validation("仅支持 jpg、jpeg、png、webp 图片");
+            throw AppException.validation("目前只支持 jpg、jpeg、png、webp 格式的图片");
         }
         if (!hasAllowedSignature(ext, file)) {
             log.info("file_upload_rejected reason=signature bizType={} originalFilename={} extension={}", bizType, original, ext);
-            throw AppException.validation("文件内容不是受支持的图片格式");
+            throw AppException.validation("文件内容不是受支持的图片格式，请重新选择图片");
         }
         String dir = switch (bizType) {
             case "DISH_IMAGE" -> "dishes";
@@ -56,14 +56,14 @@ public class FileServiceImpl implements FileService {
         Path targetDir = root.resolve(dir).resolve(date).normalize();
         if (!targetDir.startsWith(root)) {
             log.warn("file_upload_rejected reason=target_dir_escape bizType={} targetDir={}", bizType, targetDir);
-            throw AppException.validation("上传目录非法");
+            throw AppException.validation("上传目录不正确，请重新选择业务类型");
         }
         Files.createDirectories(targetDir);
         String filename = UUID.randomUUID() + "." + ext;
         Path target = targetDir.resolve(filename).normalize();
         if (!target.startsWith(targetDir)) {
             log.warn("file_upload_rejected reason=target_escape bizType={} target={}", bizType, target);
-            throw AppException.validation("上传目录非法");
+            throw AppException.validation("上传目录不正确，请重新选择业务类型");
         }
         try (InputStream input = file.getInputStream()) {
             Files.copy(input, target);

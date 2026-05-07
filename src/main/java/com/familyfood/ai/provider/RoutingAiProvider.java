@@ -1,5 +1,7 @@
 package com.familyfood.ai.provider;
 
+import com.familyfood.ai.entity.AiProviderCatalog;
+import com.familyfood.ai.service.AiCatalogService;
 import com.familyfood.common.AppException;
 import com.familyfood.config.AppProperties;
 import com.familyfood.system.api.SystemConfigApi;
@@ -12,14 +14,17 @@ import org.springframework.stereotype.Component;
 public class RoutingAiProvider implements AiProvider {
     private final AppProperties properties;
     private final SystemConfigApi configService;
+    private final AiCatalogService catalogService;
     private final DeepSeekAiProvider deepSeekProvider;
     private final MockAiProvider mockProvider;
 
     @Autowired
     public RoutingAiProvider(AppProperties properties, SystemConfigApi configService,
-                             DeepSeekAiProvider deepSeekProvider, MockAiProvider mockProvider) {
+                             AiCatalogService catalogService, DeepSeekAiProvider deepSeekProvider,
+                             MockAiProvider mockProvider) {
         this.properties = properties;
         this.configService = configService;
+        this.catalogService = catalogService;
         this.deepSeekProvider = deepSeekProvider;
         this.mockProvider = mockProvider;
     }
@@ -51,16 +56,15 @@ public class RoutingAiProvider implements AiProvider {
 
     private AiProvider delegate() {
         if (!configService.bool("ai.enabled", true)) {
-            throw AppException.badRequest("AI 功能已关闭");
+            throw AppException.badRequest("AI 功能当前已关闭，请先在系统配置中开启");
         }
-        String provider = configService.value("ai.provider", properties.aiProvider());
-        if (provider == null || provider.isBlank() || "mock".equalsIgnoreCase(provider)) {
+        AiProviderCatalog provider = catalogService.requireActiveProvider(configService.value("ai.provider", properties.aiProvider()));
+        if (AiCatalogService.CALL_TYPE_MOCK.equals(provider.getCallType())) {
             return mockProvider;
         }
-        if ("deepseek".equalsIgnoreCase(provider) || "deepseek-v4".equalsIgnoreCase(provider)
-                || "openai-compatible".equalsIgnoreCase(provider)) {
+        if (AiCatalogService.CALL_TYPE_OPENAI_CHAT_COMPLETIONS.equals(provider.getCallType())) {
             return deepSeekProvider.isConfigured() ? deepSeekProvider : mockProvider;
         }
-        throw AppException.badRequest("当前 AI 服务提供方暂不支持，请检查系统配置");
+        throw AppException.badRequest("当前选择的 AI 服务暂不支持，请检查系统配置");
     }
 }

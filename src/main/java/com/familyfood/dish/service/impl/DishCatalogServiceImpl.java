@@ -67,7 +67,7 @@ public class DishCatalogServiceImpl implements DishCatalogService {
     public DishResponse get(ActorContext actor, Long id) {
         DishView dish = dishMapper.selectDishViewById(id, actor.familyId(), !actor.admin());
         if (dish == null) {
-            throw AppException.notFound("未找到菜品");
+            throw AppException.notFound("未找到这个菜品，请刷新后再试");
         }
         return enrich(List.of(dish)).get(0);
     }
@@ -84,7 +84,7 @@ public class DishCatalogServiceImpl implements DishCatalogService {
         Dish dish = dishMapper.selectById(id);
         if (dish == null || !Objects.equals(dish.getFamilyId(), actor.familyId())
                 || Objects.equals(dish.getDeleted(), 1)) {
-            throw AppException.notFound("未找到菜品");
+            throw AppException.notFound("未找到这个菜品，请刷新后再试");
         }
         fillDish(dish, commandFromRequest(request, dish.getSourceType()));
         dish.setUpdatedAt(LocalDateTime.now());
@@ -99,7 +99,7 @@ public class DishCatalogServiceImpl implements DishCatalogService {
         String normalizedStatus = StatusValues.required(status, StatusValues.DISH_STATUSES, "status");
         Dish dish = dishMapper.selectById(id);
         if (dish == null || !Objects.equals(dish.getFamilyId(), actor.familyId())) {
-            throw AppException.notFound("未找到菜品");
+            throw AppException.notFound("未找到这个菜品，请刷新后再试");
         }
         dish.setStatus(normalizedStatus);
         dish.setUpdatedAt(LocalDateTime.now());
@@ -112,7 +112,7 @@ public class DishCatalogServiceImpl implements DishCatalogService {
     public void delete(ActorContext actor, Long id) {
         Dish dish = dishMapper.selectById(id);
         if (dish == null || !Objects.equals(dish.getFamilyId(), actor.familyId())) {
-            throw AppException.notFound("未找到菜品");
+            throw AppException.notFound("未找到这个菜品，请刷新后再试");
         }
         dish.setDeleted(1);
         dish.setUpdatedAt(LocalDateTime.now());
@@ -167,7 +167,7 @@ public class DishCatalogServiceImpl implements DishCatalogService {
             Dish dish = dishes.get(id);
             if (dish == null || !Objects.equals(dish.getFamilyId(), actor.familyId())
                     || Objects.equals(dish.getDeleted(), 1) || !"ACTIVE".equals(dish.getStatus())) {
-                throw AppException.validation("菜品不可点餐：" + id);
+                throw AppException.validation("菜品当前不可点餐，请重新选择，菜品 ID：" + id);
             }
         }
         return dishes;

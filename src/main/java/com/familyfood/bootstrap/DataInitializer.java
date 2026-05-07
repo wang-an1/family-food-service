@@ -219,13 +219,9 @@ public class DataInitializer implements CommandLineRunner {
         configs.add(config(familyId, "order.confirm_required", "true", "BOOLEAN", 0, now));
         configs.add(config(familyId, "ai.enabled", "true", "BOOLEAN", 0, now));
         configs.add(config(familyId, "ai.provider", properties.aiProvider(), "STRING", 0, now));
-        configs.add(config(familyId, "ai.base_url", properties.ai().baseUrl(), "STRING", 0, now));
         configs.add(config(familyId, "ai.chat_model", properties.ai().chatModel(), "STRING", 0, now));
         configs.add(config(familyId, "ai.link_parse_enabled", "true", "BOOLEAN", 0, now));
         configs.add(config(familyId, "ai.require_admin_review_for_dish", "true", "BOOLEAN", 0, now));
-        if (properties.ai().apiKey() != null && !properties.ai().apiKey().isBlank()) {
-            configs.add(config(familyId, "ai.api_key", properties.ai().apiKey(), "STRING", 1, now));
-        }
         configs.forEach(configMapper::insert);
     }
 

@@ -17,12 +17,13 @@ public record AppProperties(
         String uploadDir,
         @NotBlank
         String initAdminPassword,
-        @NotBlank
         String corsAllowedOrigins,
         @NotBlank
         String aiProvider,
         @Valid @NotNull
-        Ai ai
+        Ai ai,
+        @Valid
+        Secret secret
 ) {
     public record Jwt(
             @NotBlank @Size(min = 32)
@@ -34,12 +35,15 @@ public record AppProperties(
 
     public record Ai(
             @NotBlank
-            String baseUrl,
-            String apiKey,
-            @NotBlank
             String chatModel,
             @Min(1)
             int timeoutSeconds
+    ) {
+    }
+
+    public record Secret(
+            String keyId,
+            String masterKeyBase64
     ) {
     }
 

@@ -41,7 +41,7 @@ public class ScheduledTaskSchedulePlanner {
             case "WEEKLY" -> weeklyPlan(mode, safeConfig, zone);
             case "MONTHLY" -> monthlyPlan(mode, safeConfig, zone);
             case "CRON" -> cronPlan(mode, cronExpression, safeConfig, zone);
-            default -> throw AppException.validation("计划模式不支持");
+            default -> throw AppException.validation("暂不支持这种计划模式，请重新选择");
         };
     }
 
@@ -94,13 +94,13 @@ public class ScheduledTaskSchedulePlanner {
         LocalTime time = parseTime(config.timeOfDay());
         List<Integer> days = config.daysOfWeek();
         if (days == null || days.isEmpty()) {
-            throw AppException.validation("每周执行日期不能为空");
+            throw AppException.validation("请选择每周执行日期");
         }
         String dayExpression = days.stream()
                 .map(this::dayName)
                 .distinct()
                 .reduce((left, right) -> left + "," + right)
-                .orElseThrow();
+                .orElseThrow(() -> AppException.validation("每周执行日期必须在 1 到 7 之间"));
         return new PlannedSchedule(mode,
                 "0 " + time.getMinute() + " " + time.getHour() + " ? * " + dayExpression,
                 config,
@@ -111,7 +111,7 @@ public class ScheduledTaskSchedulePlanner {
         LocalTime time = parseTime(config.timeOfDay());
         int day = requirePositive(config.dayOfMonth(), "scheduleConfig.dayOfMonth");
         if (day > 31) {
-            throw AppException.validation("每月执行日期必须在 1 到 31 之间");
+            throw AppException.validation("每月执行日期需要在 1 到 31 之间");
         }
         return new PlannedSchedule(mode,
                 "0 " + time.getMinute() + " " + time.getHour() + " " + day + " * ?",
@@ -121,14 +121,14 @@ public class ScheduledTaskSchedulePlanner {
 
     private PlannedSchedule cronPlan(String mode, String cronExpression, ScheduleConfig config, ZoneId zone) {
         if (cronExpression == null || cronExpression.isBlank()) {
-            throw AppException.validation("Cron 表达式不能为空");
+            throw AppException.validation("请填写 Cron 表达式");
         }
         String cron = cronExpression.trim();
         if (!CronExpression.isValidExpression(cron)) {
-            throw AppException.validation("Cron 表达式格式不正确");
+            throw AppException.validation("Cron 表达式格式不正确，请检查后再试");
         }
         if (cronPreview(cron, zone, 1).isEmpty()) {
-            throw AppException.validation("Cron 表达式没有未来的执行时间");
+            throw AppException.validation("这个 Cron 表达式不会再触发，请调整执行时间");
         }
         return new PlannedSchedule(mode, cron, config, zone);
     }
@@ -183,17 +183,17 @@ public class ScheduledTaskSchedulePlanner {
             }
             return times;
         } catch (ParseException ex) {
-            throw AppException.validation("Cron 表达式格式不正确");
+            throw AppException.validation("Cron 表达式格式不正确，请检查后再试");
         }
     }
 
     private LocalDateTime parseRunAt(ScheduleConfig config, ZoneId zone) {
         LocalDateTime runAt = parseOptionalDateTime(config.runAt(), zone);
         if (runAt == null) {
-            throw AppException.validation("执行时间不能为空");
+            throw AppException.validation("请填写执行时间");
         }
         if (!runAt.isAfter(LocalDateTime.now(zone))) {
-            throw AppException.validation("执行时间必须晚于当前时间");
+            throw AppException.validation("执行时间需要晚于当前时间");
         }
         return runAt;
     }
@@ -211,7 +211,7 @@ public class ScheduledTaskSchedulePlanner {
 
     private LocalTime parseTime(String value) {
         if (value == null || value.isBlank()) {
-            throw AppException.validation("执行时间不能为空");
+            throw AppException.validation("请填写执行时间");
         }
         try {
             return LocalTime.parse(value.trim(), TIME_FORMAT);
@@ -226,7 +226,7 @@ public class ScheduledTaskSchedulePlanner {
 
     private int requirePositive(Integer value, String field) {
         if (value == null || value <= 0) {
-            throw AppException.validation(FieldNames.displayName(field) + "必须大于 0");
+            throw AppException.validation(FieldNames.displayName(field) + "需要大于 0");
         }
         return value;
     }
@@ -248,7 +248,7 @@ public class ScheduledTaskSchedulePlanner {
         try {
             return ZoneId.of(timeZone == null || timeZone.isBlank() ? DEFAULT_ZONE : timeZone.trim());
         } catch (DateTimeException ex) {
-            throw AppException.validation("时区格式不正确");
+            throw AppException.validation("时区格式不正确，请检查后再试");
         }
     }
 

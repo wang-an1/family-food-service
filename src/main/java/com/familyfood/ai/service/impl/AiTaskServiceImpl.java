@@ -186,7 +186,7 @@ public class AiTaskServiceImpl implements AiTaskService {
         AiTask task = taskMapper.selectById(taskId);
         ensureTaskAccess(actor, task);
         if (!"PARSE_LINK".equals(task.getTaskType())) {
-            throw AppException.badRequest("只有链接解析任务可以重试");
+            throw AppException.badRequest("只有链接解析任务可以重试，请重新选择任务");
         }
         task.setRetryCount((task.getRetryCount() == null ? 0 : task.getRetryCount()) + 1);
         task.setStatus("PENDING");
@@ -210,7 +210,7 @@ public class AiTaskServiceImpl implements AiTaskService {
         actor.requireAdmin();
         AiExtractedDish draft = extractedDishMapper.selectById(id);
         if (draft == null || !Objects.equals(draft.getFamilyId(), actor.familyId())) {
-            throw AppException.notFound("未找到 AI 菜品草稿");
+            throw AppException.notFound("未找到这份 AI 菜品草稿，请刷新后再试");
         }
         String status = request.override() == null ? "ACTIVE" :
                 StatusValues.orDefault(request.override().status(), "ACTIVE", StatusValues.DISH_STATUSES, "override.status");
@@ -312,10 +312,10 @@ public class AiTaskServiceImpl implements AiTaskService {
 
     private void ensureTaskAccess(ActorContext actor, AiTask task) {
         if (task == null || !Objects.equals(task.getFamilyId(), actor.familyId())) {
-            throw AppException.notFound("未找到 AI 任务");
+            throw AppException.notFound("未找到这个 AI 任务，请刷新后再试");
         }
         if (!actor.admin() && !Objects.equals(task.getUserId(), actor.userId())) {
-            throw AppException.forbidden("无权限访问该 AI 任务");
+            throw AppException.forbidden("你没有权限查看这个 AI 任务");
         }
     }
 

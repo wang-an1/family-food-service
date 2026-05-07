@@ -1,15 +1,20 @@
 package com.familyfood.ai;
 
+import com.familyfood.ai.entity.AiModelCatalog;
+import com.familyfood.ai.entity.AiProviderCatalog;
 import com.familyfood.ai.provider.AiProvider;
 import com.familyfood.ai.provider.DeepSeekAiProvider;
+import com.familyfood.ai.service.AiCatalogService;
 import com.familyfood.config.AppProperties;
 import com.familyfood.system.service.SystemConfigService;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -21,6 +26,7 @@ import static org.mockito.Mockito.when;
 
 class DeepSeekAiProviderTests {
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final AtomicReference<JsonNode> requestBody = new AtomicReference<>();
     private HttpServer server;
 
     @AfterEach
@@ -52,23 +58,38 @@ class DeepSeekAiProviderTests {
                 "}"
         );
         startServer(modelResponse);
-        DeepSeekAiProvider provider = new DeepSeekAiProvider(properties(), configService(), objectMapper);
+        DeepSeekAiProvider provider = new DeepSeekAiProvider(properties("deepseek"), configService("deepseek", "deepseek-v4-flash"),
+                catalogService("deepseek", "deepseek-v4-flash"), objectMapper);
 
         AiProvider.AiStructuredResult result = provider.extractDishes(new AiProvider.AiExtractionRequest(
                 "TEXT", "鸡翅", "", "空气炸锅鸡翅", "", List.of()
         ));
 
-        assertEquals("deepseek-v4", provider.modelName());
+        assertEquals("deepseek-v4-flash", provider.modelName());
+        assertEquals("deepseek-v4-flash", requestBody.get().path("model").asText());
         assertEquals("识别到空气炸锅鸡翅", result.summary());
         assertEquals("空气炸锅鸡翅", result.dishes().get(0).name());
         assertEquals("鸡翅", result.dishes().get(0).ingredients().get(0).name());
+    }
+
+    @Test
+    void usesProviderCatalogBaseUrlAndConfiguredModel() throws Exception {
+        startServer("{\"summary\":\"ok\",\"dishes\":[]}");
+        DeepSeekAiProvider provider = new DeepSeekAiProvider(properties("openai-compatible"),
+                configService("openai-compatible", "gpt-5.4"),
+                catalogService("openai-compatible", "gpt-5.4"), objectMapper);
+
+        provider.extractDishes(new AiProvider.AiExtractionRequest("TEXT", "test", "", "test", "", List.of()));
+
+        assertEquals("gpt-5.4", provider.modelName());
+        assertEquals("gpt-5.4", requestBody.get().path("model").asText());
     }
 
     private void startServer(String content) throws IOException {
         server = HttpServer.create(new InetSocketAddress(0), 0);
         server.createContext("/chat/completions", exchange -> {
             String authorization = exchange.getRequestHeaders().getFirst("Authorization");
-            exchange.getRequestBody().readAllBytes();
+            requestBody.set(objectMapper.readTree(exchange.getRequestBody().readAllBytes()));
             if (!"Bearer test-key".equals(authorization)) {
                 exchange.sendResponseHeaders(401, -1);
                 return;
@@ -84,22 +105,43 @@ class DeepSeekAiProviderTests {
         server.start();
     }
 
-    private SystemConfigService configService() {
+    private SystemConfigService configService(String providerCode, String modelName) {
         SystemConfigService configService = mock(SystemConfigService.class);
-        when(configService.value(eq("ai.base_url"), anyString())).thenReturn("http://localhost:" + server.getAddress().getPort());
-        when(configService.value(eq("ai.api_key"), anyString())).thenReturn("test-key");
-        when(configService.value(eq("ai.chat_model"), anyString())).thenReturn("deepseek-v4");
+        when(configService.secretValue(eq("ai.api_key"), anyString())).thenReturn("test-key");
+        when(configService.value(eq("ai.provider"), anyString())).thenReturn(providerCode);
+        when(configService.value(eq("ai.chat_model"), anyString())).thenReturn(modelName);
         return configService;
     }
 
-    private AppProperties properties() {
+    private AiCatalogService catalogService(String providerCode, String modelName) {
+        AiProviderCatalog provider = new AiProviderCatalog();
+        provider.setCode(providerCode);
+        provider.setDisplayName(providerCode);
+        provider.setCallType(AiCatalogService.CALL_TYPE_OPENAI_CHAT_COMPLETIONS);
+        provider.setBaseUrl("http://localhost:" + server.getAddress().getPort());
+        provider.setStatus(AiCatalogService.STATUS_ACTIVE);
+
+        AiModelCatalog model = new AiModelCatalog();
+        model.setProviderId(1L);
+        model.setModelName(modelName);
+        model.setDisplayName(modelName);
+        model.setStatus(AiCatalogService.STATUS_ACTIVE);
+
+        AiCatalogService catalogService = mock(AiCatalogService.class);
+        when(catalogService.requireActiveProvider(eq(providerCode))).thenReturn(provider);
+        when(catalogService.requireActiveModel(eq(providerCode), anyString())).thenReturn(model);
+        return catalogService;
+    }
+
+    private AppProperties properties(String providerCode) {
         return new AppProperties(
                 new AppProperties.Jwt("test-family-food-secret-test-family-food-secret", 60),
                 "./build/test-uploads",
                 "admin123",
                 "http://localhost:5173",
-                "deepseek",
-                new AppProperties.Ai("http://localhost:" + server.getAddress().getPort(), "test-key", "deepseek-v4", 30)
+                providerCode,
+                new AppProperties.Ai("deepseek-v4-pro", 30),
+                null
         );
     }
 }

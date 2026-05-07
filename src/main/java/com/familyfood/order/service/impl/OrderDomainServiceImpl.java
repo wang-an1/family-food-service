@@ -59,11 +59,11 @@ public class OrderDomainServiceImpl implements OrderDomainService {
     @Transactional
     public OrderResponse submit(ActorContext actor, OrderRequest request) {
         if (request.items() == null || request.items().isEmpty()) {
-            throw AppException.validation("请至少选择一道菜");
+            throw AppException.validation("请至少选择一道菜后再提交");
         }
         MealSession session = mealSessionService.requireFamilySession(actor, request.mealSessionId());
         if (!"OPEN".equals(session.getStatus())) {
-            throw AppException.conflict("餐次未开放，不能下单");
+            throw AppException.conflict("当前餐次还未开放，暂时不能下单");
         }
         LocalDateTime now = LocalDateTime.now();
         PersonalOrder order = new PersonalOrder();
@@ -94,7 +94,7 @@ public class OrderDomainServiceImpl implements OrderDomainService {
             throw AppException.forbidden("只能修改自己待确认的订单");
         }
         if (!"PENDING_CONFIRM".equals(order.getStatus()) && !actor.admin()) {
-            throw AppException.conflict("当前订单状态不能修改");
+            throw AppException.conflict("当前订单状态不能修改，请刷新后再试");
         }
         order.setNote(request.note());
         order.setAvoidances(request.avoidances());
@@ -110,7 +110,7 @@ public class OrderDomainServiceImpl implements OrderDomainService {
     public OrderResponse confirm(ActorContext actor, Long id, String note) {
         PersonalOrder order = ownedOrder(actor, id);
         if (!"PENDING_CONFIRM".equals(order.getStatus())) {
-            throw AppException.conflict("只有待确认订单可以确认");
+            throw AppException.conflict("只有待确认的订单可以确认");
         }
         String from = order.getStatus();
         order.setStatus("CONFIRMED");
@@ -130,10 +130,10 @@ public class OrderDomainServiceImpl implements OrderDomainService {
             throw AppException.forbidden("只能取消自己的订单");
         }
         if (!actor.admin() && !List.of("DRAFT", "SUBMITTED", "PENDING_CONFIRM").contains(order.getStatus())) {
-            throw AppException.conflict("当前订单状态不能取消");
+            throw AppException.conflict("当前订单状态不能取消，请刷新后再试");
         }
         if (List.of("COMPLETED", "CANCELLED").contains(order.getStatus())) {
-            throw AppException.conflict("当前订单状态不能取消");
+            throw AppException.conflict("当前订单状态不能取消，请刷新后再试");
         }
         String from = order.getStatus();
         order.setStatus("CANCELLED");
@@ -153,7 +153,7 @@ public class OrderDomainServiceImpl implements OrderDomainService {
         PersonalOrder order = ownedOrder(actor, id);
         OrderView view = orderMapper.selectOrderViewById(order.getId(), actor.familyId());
         if (view == null) {
-            throw AppException.notFound("未找到订单");
+            throw AppException.notFound("未找到这个订单，请刷新后再试");
         }
         return toResponses(List.of(view)).get(0);
     }
@@ -170,17 +170,17 @@ public class OrderDomainServiceImpl implements OrderDomainService {
         PersonalOrder order = orderMapper.selectById(id);
         if (order == null || !Objects.equals(order.getFamilyId(), actor.familyId())
                 || Objects.equals(order.getDeleted(), 1)) {
-            throw AppException.notFound("未找到订单");
+            throw AppException.notFound("未找到这个订单，请刷新后再试");
         }
         if (!actor.admin() && !Objects.equals(order.getUserId(), actor.userId())) {
-            throw AppException.forbidden("无权限访问该订单");
+            throw AppException.forbidden("你没有权限查看这个订单");
         }
         return order;
     }
 
     private void insertItems(ActorContext actor, Long orderId, List<OrderItemRequest> items) {
         if (items == null || items.isEmpty()) {
-            throw AppException.validation("请至少选择一道菜");
+            throw AppException.validation("请至少选择一道菜后再提交");
         }
         Set<Long> dishIds = items.stream()
                 .map(OrderItemRequest::dishId)

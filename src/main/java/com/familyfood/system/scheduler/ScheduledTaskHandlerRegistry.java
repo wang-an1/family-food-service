@@ -18,7 +18,7 @@ public class ScheduledTaskHandlerRegistry {
         for (ScheduledTaskHandler handler : discoveredHandlers) {
             String type = normalize(handler.type());
             if (mapped.containsKey(type)) {
-                throw AppException.conflict("定时任务处理器类型重复：" + type);
+                throw AppException.conflict("定时任务处理器类型重复，请检查配置：" + type);
             }
             mapped.put(type, handler);
         }

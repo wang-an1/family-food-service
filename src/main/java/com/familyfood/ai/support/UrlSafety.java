@@ -15,34 +15,34 @@ public class UrlSafety {
         try {
             uri = URI.create(url);
         } catch (Exception ex) {
-            throw AppException.validation("链接格式不正确");
+            throw AppException.validation("链接格式不正确，请检查后重新填写");
         }
         if (!"http".equalsIgnoreCase(uri.getScheme()) && !"https".equalsIgnoreCase(uri.getScheme())) {
-            throw AppException.validation("只支持 HTTP 或 HTTPS 链接");
+            throw AppException.validation("只支持以 http 或 https 开头的链接");
         }
         String host = uri.getHost();
         if (host == null || host.isBlank()) {
-            throw AppException.validation("链接缺少域名");
+            throw AppException.validation("链接中缺少域名，请填写完整地址");
         }
         String lowerHost = host.toLowerCase();
         if ("localhost".equals(lowerHost) || lowerHost.endsWith(".local")) {
-            throw AppException.validation("链接解析禁止访问本机或内网地址");
+            throw AppException.validation("为了安全，不能解析本机或内网地址");
         }
         try {
             for (InetAddress address : InetAddress.getAllByName(host)) {
                 if (address.isAnyLocalAddress() || address.isLoopbackAddress() || address.isLinkLocalAddress()
                         || address.isSiteLocalAddress() || address.isMulticastAddress()) {
-                    throw AppException.validation("链接解析禁止访问本机或内网地址");
+                    throw AppException.validation("为了安全，不能解析本机或内网地址");
                 }
                 String ip = address.getHostAddress();
                 if (ip.startsWith("169.254.") || ip.equals("169.254.169.254")) {
-                    throw AppException.validation("链接解析禁止访问云元数据地址");
+                    throw AppException.validation("为了安全，不能解析云服务器元数据地址");
                 }
             }
         } catch (AppException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw AppException.validation("链接域名无法解析");
+            throw AppException.validation("这个链接的域名无法解析，请检查链接是否正确");
         }
     }
 }

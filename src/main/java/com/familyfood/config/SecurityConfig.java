@@ -52,9 +52,9 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(errors -> errors
                         .authenticationEntryPoint((request, response, ex) ->
-                                writeError(response, HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "请先登录"))
+                                writeError(response, HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "请先登录后再继续操作"))
                         .accessDeniedHandler((request, response, ex) ->
-                                writeError(response, HttpStatus.FORBIDDEN, "FORBIDDEN", "无权限")))
+                                writeError(response, HttpStatus.FORBIDDEN, "FORBIDDEN", "你没有权限进行此操作")))
                 .headers(headers -> headers
                         .frameOptions(frameOptions -> frameOptions.sameOrigin())
                         .referrerPolicy(referrerPolicy -> referrerPolicy.policy(
@@ -74,17 +74,22 @@ public class SecurityConfig {
 
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
-        List<String> origins = Arrays.stream(properties.corsAllowedOrigins().split(","))
+        String configuredOrigins = properties.corsAllowedOrigins() == null ? "" : properties.corsAllowedOrigins();
+        List<String> origins = Arrays.stream(configuredOrigins.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isBlank())
                 .toList();
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        if (origins.isEmpty()) {
+            return source;
+        }
+
+        CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
     }

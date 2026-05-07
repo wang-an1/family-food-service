@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: optional:file:./config/application-secret.yml
   application:
     name: family-food
   profiles:
@@ -43,10 +45,8 @@ family-food:
     ttl-minutes: 1440
   upload-dir: ./uploads
   init-admin-password: admin123
-  cors-allowed-origins: http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174
+  cors-allowed-origins: ""
   ai-provider: deepseek
   ai:
-    base-url: https://api.deepseek.com
-    api-key: ""
     chat-model: deepseek-v4-pro
     timeout-seconds: 30

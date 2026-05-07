@@ -33,7 +33,7 @@ public class GlobalExceptionHandler {
                 .map(this::fieldError)
                 .toList();
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
-                .body(ApiResponse.error("VALIDATION_ERROR", "请求参数校验失败", errors));
+                .body(ApiResponse.error("VALIDATION_ERROR", "请求参数有误，请检查后再试", errors));
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -46,55 +46,55 @@ public class GlobalExceptionHandler {
                                 violation.getConstraintDescriptor().getAttributes())))
                 .toList();
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
-                .body(ApiResponse.error("VALIDATION_ERROR", "请求参数校验失败", errors));
+                .body(ApiResponse.error("VALIDATION_ERROR", "请求参数有误，请检查后再试", errors));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     ResponseEntity<ApiResponse<Void>> handleUnreadable() {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("BAD_REQUEST", "请求体格式不正确"));
+                .body(ApiResponse.error("BAD_REQUEST", "请求内容格式不正确，请检查后再试"));
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     ResponseEntity<ApiResponse<Void>> handleMissingParameter(MissingServletRequestParameterException ex) {
         List<ApiResponse.ErrorDetail> errors = List.of(
-                new ApiResponse.ErrorDetail(ex.getParameterName(), "缺少必填参数"));
+                new ApiResponse.ErrorDetail(ex.getParameterName(), "请补充这个必填参数"));
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("BAD_REQUEST", "请求参数不完整", errors));
+                .body(ApiResponse.error("BAD_REQUEST", "请求参数不完整，请补充后再提交", errors));
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     ResponseEntity<ApiResponse<Void>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         List<ApiResponse.ErrorDetail> errors = List.of(
-                new ApiResponse.ErrorDetail(ex.getName(), "参数类型不正确"));
+                new ApiResponse.ErrorDetail(ex.getName(), "参数类型不正确，请检查后再试"));
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("BAD_REQUEST", "请求参数格式不正确", errors));
+                .body(ApiResponse.error("BAD_REQUEST", "请求参数格式不正确，请检查后再试", errors));
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     ResponseEntity<ApiResponse<Void>> handleMaxUploadSize() {
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
-                .body(ApiResponse.error("UPLOAD_TOO_LARGE", "文件大小超过限制"));
+                .body(ApiResponse.error("UPLOAD_TOO_LARGE", "文件太大了，请压缩后再上传"));
     }
 
     @ExceptionHandler(IOException.class)
     ResponseEntity<ApiResponse<Void>> handleIo(IOException ex) {
         log.error("io_error traceId={}", TraceIds.current(), ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("INTERNAL_ERROR", "文件或网络读写失败，请稍后重试"));
+                .body(ApiResponse.error("INTERNAL_ERROR", "文件或网络暂时读写失败，请稍后再试"));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     ResponseEntity<ApiResponse<Void>> handleAccessDenied() {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.error("FORBIDDEN", "无权限"));
+                .body(ApiResponse.error("FORBIDDEN", "你没有权限进行此操作"));
     }
 
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiResponse<Void>> handleUnexpected(Exception ex) {
         log.error("unexpected_error traceId={}", TraceIds.current(), ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("INTERNAL_ERROR", "系统异常，请稍后重试"));
+                .body(ApiResponse.error("INTERNAL_ERROR", "系统暂时处理失败，请稍后再试"));
     }
 
     private ApiResponse.ErrorDetail fieldError(FieldError error) {
@@ -115,18 +115,18 @@ public class GlobalExceptionHandler {
     private String validationMessage(String field, String code, Map<String, Object> attributes) {
         String name = FieldNames.displayName(field);
         return switch (code == null ? "" : code) {
-            case "NotBlank", "NotEmpty", "NotNull" -> name + "不能为空";
+            case "NotBlank", "NotEmpty", "NotNull" -> "请填写" + name;
             case "Size" -> sizeMessage(name, attributes);
             case "Min" -> name + "不能小于 " + attributes.getOrDefault("value", "最小值");
             case "Max" -> name + "不能大于 " + attributes.getOrDefault("value", "最大值");
-            case "Positive" -> name + "必须大于 0";
-            case "Pattern" -> name + "格式不正确";
-            case "Email" -> name + "邮箱格式不正确";
-            case "Future" -> name + "必须是未来时间";
+            case "Positive" -> name + "需要大于 0";
+            case "Pattern" -> name + "格式不正确，请检查后再试";
+            case "Email" -> name + "邮箱格式不正确，请检查后再试";
+            case "Future" -> name + "需要填写未来时间";
             case "FutureOrPresent" -> name + "不能早于当前时间";
-            case "Past" -> name + "必须是过去时间";
+            case "Past" -> name + "需要填写过去时间";
             case "PastOrPresent" -> name + "不能晚于当前时间";
-            default -> name + "不符合要求";
+            default -> name + "不符合要求，请检查后再试";
         };
     }
 

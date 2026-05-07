@@ -12,7 +12,7 @@ public final class CurrentUser {
     public static UserPrincipal get() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !(authentication.getPrincipal() instanceof UserPrincipal principal)) {
-            throw AppException.unauthorized("未登录");
+            throw AppException.unauthorized("请先登录后再继续操作");
         }
         return principal;
     }
@@ -23,7 +23,7 @@ public final class CurrentUser {
 
     public static void requireAdmin() {
         if (!isAdmin()) {
-            throw AppException.forbidden("仅管理员可操作");
+            throw AppException.forbidden("只有管理员可以进行此操作");
         }
     }
 }

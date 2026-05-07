@@ -199,7 +199,7 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService {
             return toResponse(task);
         } catch (SchedulerException ex) {
             log.warn("scheduled_task_trigger_failed taskId={}", id, ex);
-            throw AppException.serviceUnavailable("SCHEDULER_ERROR", "触发定时任务失败，请稍后重试");
+            throw AppException.serviceUnavailable("SCHEDULER_ERROR", "定时任务暂时触发失败，请稍后再试");
         }
     }
 
@@ -211,7 +211,7 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService {
             scheduler.unscheduleJob(triggerKey(task));
             scheduler.deleteJob(jobKey(task));
         } catch (SchedulerException ex) {
-            throw AppException.serviceUnavailable("SCHEDULER_ERROR", "删除定时任务失败，请稍后重试");
+            throw AppException.serviceUnavailable("SCHEDULER_ERROR", "定时任务暂时删除失败，请稍后再试");
         }
         taskMapper.deleteById(id);
     }
@@ -261,7 +261,7 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService {
         try {
             ScheduledTaskHandler handler = registry.get(task.getTaskType());
             if (handler == null) {
-                throw new IllegalStateException("缺少定时任务处理器：" + task.getTaskType());
+                throw new IllegalStateException("缺少对应的定时任务处理器：" + task.getTaskType());
             }
             handler.execute(new ScheduledTaskExecutionContext(
                     task.getId(), task.getTaskType(), parseMap(task.getParametersJson()), manual));
@@ -294,7 +294,7 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService {
                 scheduler.resumeTrigger(triggerKey(task));
             }
         } catch (SchedulerException ex) {
-            throw AppException.serviceUnavailable("SCHEDULER_ERROR", "同步定时任务失败，请稍后重试");
+            throw AppException.serviceUnavailable("SCHEDULER_ERROR", "定时任务暂时同步失败，请稍后再试");
         }
     }
 
@@ -304,7 +304,7 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService {
                 scheduler.pauseTrigger(triggerKey(task));
             }
         } catch (SchedulerException ex) {
-            throw AppException.serviceUnavailable("SCHEDULER_ERROR", "暂停定时任务失败，请稍后重试");
+            throw AppException.serviceUnavailable("SCHEDULER_ERROR", "定时任务暂时暂停失败，请稍后再试");
         }
     }
 
@@ -400,21 +400,21 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService {
     private ScheduledTask requireTask(Long id) {
         ScheduledTask task = taskMapper.selectById(id);
         if (task == null) {
-            throw AppException.notFound("未找到定时任务");
+            throw AppException.notFound("未找到这个定时任务，请刷新后再试");
         }
         return task;
     }
 
     private void requireHandler(String type) {
         if (!registry.has(type)) {
-            throw AppException.validation("定时任务类型不可用，请重新选择");
+            throw AppException.validation("当前定时任务类型不可用，请重新选择");
         }
     }
 
     private UserPrincipal requireGlobalAdmin() {
         UserPrincipal principal = CurrentUser.get();
         if (!Role.ADMIN.name().equals(principal.role()) || !"admin".equals(principal.username())) {
-            throw AppException.forbidden("仅全局管理员可管理定时任务");
+            throw AppException.forbidden("只有全局管理员可以管理定时任务");
         }
         return principal;
     }
@@ -431,7 +431,7 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService {
         try {
             return value == null ? null : objectMapper.writeValueAsString(value);
         } catch (JsonProcessingException ex) {
-            throw AppException.validation("JSON 数据格式不正确");
+            throw AppException.validation("JSON 数据格式不正确，请检查后再保存");
         }
     }
 
@@ -442,7 +442,7 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService {
         try {
             return objectMapper.readValue(task.getScheduleConfigJson(), ScheduleConfig.class);
         } catch (JsonProcessingException ex) {
-            throw AppException.validation("已保存的计划配置格式不正确");
+            throw AppException.validation("已保存的计划配置无法识别，请重新保存");
         }
     }
 
@@ -453,7 +453,7 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService {
         try {
             return objectMapper.readValue(json, MAP_TYPE);
         } catch (JsonProcessingException ex) {
-            throw AppException.validation("已保存的任务参数格式不正确");
+            throw AppException.validation("已保存的任务参数无法识别，请重新保存");
         }
     }
 

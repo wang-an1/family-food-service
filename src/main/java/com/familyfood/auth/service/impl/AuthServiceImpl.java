@@ -43,12 +43,12 @@ public class AuthServiceImpl implements AuthService {
         User user = userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getUsername, request.username()));
         if (user == null || !"ACTIVE".equals(user.getStatus()) || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             log.info("login_failed username={} reason=bad_credentials_or_inactive", request.username());
-            throw AppException.unauthorized("用户名或密码错误");
+            throw AppException.unauthorized("用户名或密码不正确，请检查后再试");
         }
         FamilyMember member = membershipApi.activeMembershipForUser(user.getId());
         if (member == null) {
             log.info("login_failed username={} userId={} reason=no_active_family", user.getUsername(), user.getId());
-            throw AppException.forbidden("用户未加入家庭");
+            throw AppException.forbidden("当前账号还没有加入家庭，请先加入或创建家庭");
         }
         UserPrincipal principal = new UserPrincipal(user.getId(), member.getFamilyId(), user.getUsername(), user.getNickname(), member.getRole());
         log.info("login_success username={} userId={} familyId={} role={}",

@@ -82,10 +82,10 @@ public class IntentApplicationServiceImpl implements IntentApplicationService {
         ActorContext actor = actorProvider.current();
         IntentRequest intent = intentMapper.selectById(id);
         if (intent == null || !Objects.equals(intent.getFamilyId(), actor.familyId())) {
-            throw AppException.notFound("未找到意向记录");
+            throw AppException.notFound("未找到这条点餐意图，请刷新后再试");
         }
         if (!actor.admin() && !Objects.equals(intent.getUserId(), actor.userId())) {
-            throw AppException.forbidden("无权限访问该意向记录");
+            throw AppException.forbidden("你没有权限查看这条点餐意图");
         }
         return intent;
     }

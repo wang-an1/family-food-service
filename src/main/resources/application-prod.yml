@@ -8,3 +8,6 @@ spring:
 logging:
   level:
     com.familyfood: INFO
+
+family-food:
+  cors-allowed-origins: ${FAMILY_FOOD_CORS_ALLOWED_ORIGINS:}

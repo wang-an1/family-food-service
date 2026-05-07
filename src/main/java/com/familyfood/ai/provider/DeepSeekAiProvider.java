@@ -1,6 +1,9 @@
 package com.familyfood.ai.provider;
 
 import com.familyfood.ai.dto.RecommendationDto;
+import com.familyfood.ai.entity.AiModelCatalog;
+import com.familyfood.ai.entity.AiProviderCatalog;
+import com.familyfood.ai.service.AiCatalogService;
 import com.familyfood.common.AppException;
 import com.familyfood.config.AppProperties;
 import com.familyfood.system.api.SystemConfigApi;
@@ -24,18 +27,20 @@ import org.springframework.web.client.RestClientException;
 @Component
 public class DeepSeekAiProvider implements AiProvider {
     private static final Logger log = LoggerFactory.getLogger(DeepSeekAiProvider.class);
-    private static final String DEFAULT_BASE_URL = "https://api.deepseek.com";
-    private static final String DEFAULT_MODEL = "deepseek-v4";
+    private static final String DEFAULT_MODEL = "deepseek-v4-pro";
 
     private final AppProperties properties;
     private final SystemConfigApi configService;
+    private final AiCatalogService catalogService;
     private final ObjectMapper objectMapper;
     private final RestClient restClient;
 
     @Autowired
-    public DeepSeekAiProvider(AppProperties properties, SystemConfigApi configService, ObjectMapper objectMapper) {
+    public DeepSeekAiProvider(AppProperties properties, SystemConfigApi configService,
+                              AiCatalogService catalogService, ObjectMapper objectMapper) {
         this.properties = properties;
         this.configService = configService;
+        this.catalogService = catalogService;
         this.objectMapper = objectMapper;
         this.restClient = RestClient.builder()
                 .requestFactory(requestFactory(properties.ai().timeoutSeconds()))
@@ -97,11 +102,11 @@ public class DeepSeekAiProvider implements AiProvider {
                     item.path("estimatedMinutes").asInt(20),
                     ingredients,
                     text(item, "instructions", "按常规家常做法处理食材并调味。"),
-                    text(item, "reason", "DeepSeek 根据输入内容生成。"),
+                    text(item, "reason", "AI 根据输入内容生成。"),
                     clamp(item.path("confidence").asDouble(0.82))
             ));
         }
-        return new AiStructuredResult(text(root, "summary", "DeepSeek 已生成候选菜。"), dishes);
+        return new AiStructuredResult(text(root, "summary", "AI 已生成候选菜。"), dishes);
     }
 
     @Override
@@ -162,7 +167,7 @@ public class DeepSeekAiProvider implements AiProvider {
             ));
         }
         return new AiMenuPlanResult(
-                text(root, "planTitle", "DeepSeek 菜单搭配"),
+                text(root, "planTitle", "AI 菜单搭配"),
                 items,
                 text(root, "shoppingSummary", "按菜单检查主要食材是否充足。")
         );
@@ -176,10 +181,11 @@ public class DeepSeekAiProvider implements AiProvider {
     private String chat(String systemPrompt, String userPrompt, boolean jsonMode) {
         String key = apiKey();
         if (key.isBlank()) {
-            throw AppException.badRequest("请先在系统配置中设置 DeepSeek 密钥");
+            throw AppException.badRequest("请先在系统配置里填写 AI 密钥后再使用该功能");
         }
-        String endpoint = chatEndpoint();
-        String model = chatModel();
+        AiProviderCatalog provider = currentProvider();
+        String endpoint = chatEndpoint(provider);
+        String model = chatModel(provider);
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("model", model);
         body.put("messages", List.of(
@@ -202,17 +208,17 @@ public class DeepSeekAiProvider implements AiProvider {
                     .body(JsonNode.class);
             String content = response == null ? null : response.path("choices").path(0).path("message").path("content").asText(null);
             if (content == null || content.isBlank()) {
-                log.warn("ai_provider_empty_response provider=deepseek model={} endpoint={} durationMs={}",
-                        model, endpoint, System.currentTimeMillis() - started);
-                throw AppException.serviceUnavailable("AI_PROVIDER_ERROR", "AI 服务返回为空，请稍后重试");
+                log.warn("ai_provider_empty_response provider={} model={} endpoint={} durationMs={}",
+                        provider.getCode(), model, endpoint, System.currentTimeMillis() - started);
+                throw AppException.serviceUnavailable("AI_PROVIDER_ERROR", "AI 服务暂时没有返回内容，请稍后再试");
             }
-            log.info("ai_provider_call_success provider=deepseek model={} endpoint={} jsonMode={} durationMs={}",
-                    model, endpoint, jsonMode, System.currentTimeMillis() - started);
+            log.info("ai_provider_call_success provider={} model={} endpoint={} jsonMode={} durationMs={}",
+                    provider.getCode(), model, endpoint, jsonMode, System.currentTimeMillis() - started);
             return content.trim();
         } catch (RestClientException ex) {
-            log.warn("ai_provider_call_failed provider=deepseek model={} endpoint={} durationMs={}",
-                    model, endpoint, System.currentTimeMillis() - started, ex);
-            throw AppException.serviceUnavailable("AI_UNAVAILABLE", "AI 服务暂时不可用，请稍后重试");
+            log.warn("ai_provider_call_failed provider={} model={} endpoint={} durationMs={}",
+                    provider.getCode(), model, endpoint, System.currentTimeMillis() - started, ex);
+            throw AppException.serviceUnavailable("AI_UNAVAILABLE", "AI 服务暂时不可用，请稍后再试");
         }
     }
 
@@ -254,22 +260,30 @@ public class DeepSeekAiProvider implements AiProvider {
         );
     }
 
-    private String chatEndpoint() {
-        String baseUrl = configService.value("ai.base_url", propertyBaseUrl());
-        String normalized = baseUrl == null || baseUrl.isBlank() ? DEFAULT_BASE_URL : baseUrl;
-        return normalized.replaceAll("/+$", "") + "/chat/completions";
+    private String chatEndpoint(AiProviderCatalog provider) {
+        String baseUrl = provider.getBaseUrl();
+        if (baseUrl == null || baseUrl.isBlank()) {
+            throw AppException.badRequest("AI 供应商还没有配置接口基础地址，请先到系统配置中补充");
+        }
+        return baseUrl.trim().replaceAll("/+$", "") + "/chat/completions";
     }
 
     private String apiKey() {
-        return configService.value("ai.api_key", properties.ai().apiKey() == null ? "" : properties.ai().apiKey()).trim();
+        return configService.secretValue("ai.api_key", "").trim();
     }
 
     private String chatModel() {
-        return configService.value("ai.chat_model", propertyModel());
+        return chatModel(currentProvider());
     }
 
-    private String propertyBaseUrl() {
-        return properties.ai() == null || properties.ai().baseUrl() == null ? DEFAULT_BASE_URL : properties.ai().baseUrl();
+    private String chatModel(AiProviderCatalog provider) {
+        String configured = configService.value("ai.chat_model", propertyModel());
+        AiModelCatalog model = catalogService.requireActiveModel(provider.getCode(), configured);
+        return model == null ? propertyModel() : model.getModelName();
+    }
+
+    private AiProviderCatalog currentProvider() {
+        return catalogService.requireActiveProvider(configService.value("ai.provider", properties.aiProvider()));
     }
 
     private String propertyModel() {
@@ -288,7 +302,7 @@ public class DeepSeekAiProvider implements AiProvider {
         try {
             return objectMapper.readTree(json);
         } catch (JsonProcessingException ex) {
-            throw AppException.serviceUnavailable("AI_PROVIDER_ERROR", "AI 服务返回格式无法解析，请稍后重试");
+            throw AppException.serviceUnavailable("AI_PROVIDER_ERROR", "AI 返回的内容暂时无法识别，请稍后再试");
         }
     }
 

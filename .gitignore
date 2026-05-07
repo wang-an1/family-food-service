@@ -29,6 +29,7 @@ uploads/
 application-local.yml
 application-*.local.yml
 *.local.properties
+config/application-secret.yml
 
 # 操作系统文件
 .DS_Store

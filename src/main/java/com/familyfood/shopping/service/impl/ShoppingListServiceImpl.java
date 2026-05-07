@@ -122,11 +122,11 @@ public class ShoppingListServiceImpl implements ShoppingListService {
 
     private void ensureItemAccess(ActorContext actor, ShoppingListItem item) {
         if (item == null) {
-            throw AppException.notFound("未找到采购条目");
+            throw AppException.notFound("未找到这个采购条目，请刷新后再试");
         }
         ShoppingList list = listMapper.selectById(item.getShoppingListId());
         if (list == null || !Objects.equals(list.getFamilyId(), actor.familyId())) {
-            throw AppException.notFound("未找到采购条目");
+            throw AppException.notFound("未找到这个采购条目，请刷新后再试");
         }
     }
 
